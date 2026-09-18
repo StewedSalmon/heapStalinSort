@@ -38,7 +38,10 @@ The final v5 architecture operates in four distinct phases:
 
 ### 1. Comparison to Standard Sorts
 
-*(Insert generated chart comparing v5 to Heap, Merge, Quick here)*
+<img width="4200" height="1800" alt="algo_compare_10pct_rand" src="https://github.com/user-attachments/assets/135080f1-e5fa-45b3-8cf9-7eb829d34ff9" />
+<img width="4200" height="1800" alt="algo_compare_10pct_rev" src="https://github.com/user-attachments/assets/73d316e3-858c-4532-93e9-8ad4f6cd1a23" />
+<img width="4200" height="1800" alt="algo_compare_10pct_sorted" src="https://github.com/user-attachments/assets/6aceeae2-be54-47f6-a688-78e0726d9429" />
+<img width="4200" height="1800" alt="algo_compare_10pct_nsorted" src="https://github.com/user-attachments/assets/df2c07a1-5c1e-42cd-8a91-3f584bc77017" />
 
 In randomly sorted and reverse sorted arrays, EMA Heap Stalin Sort demonstrates execution times similar to Heap Sort, but with slightly higher comparison counts across all data sizes. This occurs because the algorithm degrades to a standard Heap Sort when its heuristics fail; in highly disordered data, the EMA threshold is exceeded, resulting in nearly 100% of the array being purged to the Min-Heap. Compared to Quick Sort, the algorithm’s metrics are approximately 2 times higher in randomly sorted data and up to 7 times higher in reverse sorted data.
 
@@ -49,7 +52,10 @@ In partially sorted datasets (especially on lower disorders), EMA Heap Stalin So
 
 ### 2. v4 vs v5
 
-*(Insert generated charts for 2%, 5%, 10%, and 20% comparisons here)*
+<img width="5346" height="1581" alt="linear_vs_ema_2_percent" src="https://github.com/user-attachments/assets/190c7e04-818c-4c88-99a6-5634f48d1999" />
+<img width="5352" height="1581" alt="linear_vs_ema_5_percent" src="https://github.com/user-attachments/assets/d7410a58-24b2-4a88-900d-2a06fa3e513f" />
+<img width="5349" height="1581" alt="linear_vs_ema_10_percent" src="https://github.com/user-attachments/assets/4410bbbf-fc68-4258-8ebb-9429719e460b" />
+<img width="5352" height="1581" alt="linear_vs_ema_20_percent" src="https://github.com/user-attachments/assets/e76d6226-9caa-4e3f-823a-0e43550c6e88" />
 
 v4 and v5 exhibit identical performance in arrays with 2% swaps. However, at 5% and 10% swaps, their metrics diverge significantly at the 500k size. v4 shows approximately a 25% higher execution time and a 40% higher comparison count at 5% swaps; these differences increase to 118% and 161%, respectively, at 10%. At 20% swaps, v4's linear threshold heuristic purges over 93% of the dataset and executes in nearly twice the time of v5.
 
