@@ -74,3 +74,7 @@ This divergence highlights the limitation of a rigid linear threshold. While eff
 ## CONCLUSION
 
 The Heap Stalin Sort is best categorized as a high-performance adaptive heuristic sorting algorithm. While the algorithm falls behind standard O(n log n) sorting algorithms in random or reversed data, it excels in sorted data and data with small-to-medium swap rates.
+
+## HELLO!
+
+If you like this project, please consider giving it a star! Feel free to reach out if there are any issues or anything you want to discuss.
