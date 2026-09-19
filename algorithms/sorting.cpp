@@ -1212,12 +1212,48 @@ void emaHeapStalinSort(int a[], int n) {
 
     // 1. O(N) boundary scan to find min and max values
     int min_val = a[0], max_val = a[0];
+    long long reverseCount = 0;
     for (int i = 1; i < n; ++i) {
+        if (a[i] < a[i - 1]) reverseCount++;
         if (a[i] < min_val) min_val = a[i];
         else if (a[i] > max_val) max_val = a[i];
     }
+
+    // reverse the array if it is mostly in descending order
+    float reverseRatio = (float)reverseCount / n;
+    if (reverseRatio > 0.8) {
+        std::reverse(a, a + n);
+    }
+
     long long range = max_val - min_val;
     long long tolerance = range / 50; // 2% floating buffer
+
+    // int mid = n / 2;
+    // int pivotIndex;
+    
+    // // Find the median of the first, middle, and last elements
+    // if ((a[0] <= a[mid] && a[mid] <= a[n-1]) || (a[n-1] <= a[mid] && a[mid] <= a[0])) {
+    //     pivotIndex = mid;
+    // } else if ((a[mid] <= a[0] && a[0] <= a[n-1]) || (a[n-1] <= a[0] && a[0] <= a[mid])) {
+    //     pivotIndex = 0;
+    // } else {
+    //     pivotIndex = n - 1;
+    // }
+    
+    // long long pivot = a[pivotIndex];
+    
+    // // Standard Hoare Partition
+    // int left = 0;
+    // int right = n - 1;
+    // while (true) {
+    //     while (a[left] < pivot) left++;
+    //     while (a[right] > pivot) right--;
+    //     if (left >= right) break;
+        
+    //     std::swap(a[left], a[right]);
+    //     left++;
+    //     right--;
+    // }
 
     // EMA buffer
     int writeIndex = 1;
@@ -1283,19 +1319,67 @@ void emaHeapStalinSort(int a[], int n) {
     delete [] merge;
 }
 
-void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCnt) {
+void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCnt, 
+    long long& fixableBefore, long long& fixableAfter, long long& dropBefore, long long& dropAfter) {
     comparison = 0;
     int purgeCount = 0;
-    int *purged = new int[n]; 
+    int *purged = new int[n];
+    fixableBefore = 0;
+    fixableAfter = 0;
+    dropBefore = 0;
+    dropAfter = 0; 
 
     // 1. O(N) boundary scan to find min and max values
     int min_val = a[0], max_val = a[0];
+    long long reverseCount = 0;
     for (int i = 1; i < n; ++i) {
+        if (a[i] < a[i - 1]) dropBefore += (a[i - 1] - a[i]);
+        if (i >= 2 && a[i] < a[i-1] && a[i] >= a[i-2]) fixableBefore++;
         if (++comparison && a[i] < min_val) min_val = a[i];
         else if (++comparison && a[i] > max_val) max_val = a[i];
     }
+
+    // reverse the array if it is mostly in descending order
+    float reverseRatio = (float)reverseCount / n;
+    if (reverseRatio > 0.8) {
+        std::reverse(a, a + n);
+    }
+
     long long range = max_val - min_val;
     long long tolerance = range / 50; // 2% floating buffer
+
+    // int mid = n / 2;
+    // int pivotIndex;
+    
+    // // Find the median of the first, middle, and last elements
+    // if ((++comparison && a[0] <= a[mid] && ++comparison && a[mid] <= a[n-1]) || (++comparison && a[n-1] <= a[mid] && ++comparison && a[mid] <= a[0])) {
+    //     pivotIndex = mid;
+    // } else if ((++comparison && a[mid] <= a[0] && ++comparison && a[0] <= a[n-1]) || (++comparison && a[n-1] <= a[0] && ++comparison && a[0] <= a[mid])) {
+    //     pivotIndex = 0;
+    // } else {
+    //     pivotIndex = n - 1;
+    // }
+    
+    // long long pivot = a[pivotIndex];
+    
+    // // Standard Hoare Partition
+    // int left = 0;
+    // int right = n - 1;
+    // while (true) {
+    //     while (++comparison && a[left] < pivot) left++;
+    //     while (++comparison && a[right] > pivot) right--;
+    //     if (left >= right) break;
+        
+    //     std::swap(a[left], a[right]);
+    //     left++;
+    //     right--;
+    // }
+
+    // Trace stats after partitioning
+    for (int i = 1; i < n; ++i) {
+        if (a[i] < a[i - 1]) dropAfter += (a[i - 1] - a[i]);
+        if (i >= 2 && a[i] < a[i-1] && a[i] >= a[i-2]) fixableAfter++;
+    }
 
     // EMA buffer
     int writeIndex = 1;

@@ -19,6 +19,10 @@ struct Record {
     long long comparison;
     long long time; // in nanoseconds
     long long purgeCount; // for heapStalinSort
+    long long fixableBefore;
+    long long fixableAfter;
+    long long dropBefore;
+    long long dropAfter; 
 };
 
 //function which returns Record struct of each sorting algorithm, passing the sorting function as a pointer
@@ -38,7 +42,6 @@ void radixSort(int a[], int n);
 void flashSort(int a[], int n);
 void heapStalinSort(int a[], int n);
 void timSort(int a[], int n);
-void doubleHeapStalinSort(int a[], int n);
 void emaHeapStalinSort(int a[], int n);
 // Prototype for functions with comparison counter
 void selectionSort(int a[], int n, long long &comparison);
@@ -54,8 +57,7 @@ void radixSort(int a[], int n, long long &comparison);
 void flashSort(int a[], int n, long long &comparison);
 void heapStalinSort(int a[], int n, long long &comparison, long long &purgeCnt);
 void timSort(int a[], int n, long long& comparison);
-void doubleHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCnt);
-void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCnt);
+void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCnt, long long& fixableBefore, long long& fixableAfter, long long& dropBefore, long long& dropAfter);
 //Data generator
 void GenerateRandomData(int a[], int n);
 void GenerateSortedData(int a[], int n);
