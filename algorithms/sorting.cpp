@@ -1398,7 +1398,14 @@ void testSubject(int a[], int n) {
     float reverseRatio = (float)reverseCount / n;
     if (reverseRatio > 0.8) {
         std::reverse(a, a + n);
+        reverseRatio = 1.0f - reverseRatio;
     }
+    // estimate disorder percentage
+    double core = 1.0 - 2.0 * reverseRatio;
+    if (core < 0.0) core = 0.0;
+
+    double p = 1.0 - std::sqrt(core);
+    if (p > 0.99) p = 0.99;
 
     // EMA buffer
     int writeIndex = 1;
@@ -1409,7 +1416,7 @@ void testSubject(int a[], int n) {
     if (avg_gap == 0) avg_gap = 1; // Prevent zero-gap on flat lines
 
     // The hybrid tolerance formula
-    long long tolerance = (range / 500) + (128 * avg_gap);
+    long long tolerance = (range / 500) + (long long)(128 / (1 - p) * avg_gap);
 
     int consecutiveFall = 0;
     long long shadowSequenceStart = 0;
@@ -1477,7 +1484,7 @@ void testSubject(int a[], int n) {
     delete [] merge;
 }
 
-void testSubject(int a[], int n, long long& comparison, long long& purgeCnt) {
+void testSubject(int a[], int n, long long& comparison, long long& purgeCnt, long long& tol, float& disorderEst) {
     comparison = 0;
     int purgeCount = 0;
     int *purged = new int[n];
@@ -1486,6 +1493,7 @@ void testSubject(int a[], int n, long long& comparison, long long& purgeCnt) {
     int min_val = a[0], max_val = a[0];
     long long reverseCount = 0;
     for (int i = 1; i < n; ++i) {
+        if (++comparison && a[i] < a[i - 1]) reverseCount++;
         if (++comparison && a[i] < min_val) min_val = a[i];
         else if (++comparison && a[i] > max_val) max_val = a[i];
     }
@@ -1494,7 +1502,15 @@ void testSubject(int a[], int n, long long& comparison, long long& purgeCnt) {
     float reverseRatio = (float)reverseCount / n;
     if (reverseRatio > 0.8) {
         std::reverse(a, a + n);
+        reverseRatio = 1.0f - reverseRatio;
     }
+    disorderEst = 1000 * reverseRatio;
+    // estimate disorder percentage
+    double core = 1.0 - 2.0 * reverseRatio;
+    if (core < 0.0) core = 0.0;
+
+    double p = 1.0 - std::sqrt(core);
+    if (p > 0.99) p = 0.99;
 
     // EMA buffer
     int writeIndex = 1;
@@ -1505,20 +1521,17 @@ void testSubject(int a[], int n, long long& comparison, long long& purgeCnt) {
     if (avg_gap == 0) avg_gap = 1; // Prevent zero-gap on flat lines
 
     // The hybrid tolerance formula
-    long long tolerance = (range / 500) + (128 * avg_gap);
+    long long tolerance = (range / 500) + (long long)(128 / (1 - p) * avg_gap);
+    tol = tolerance;
 
-    int consecutiveFall = 0;
-    long long shadowSequenceStart = 0;
-    
     for (int i = 1; i < n; ++i) {
         // expected mathematical ceiling
-        if (a[i] >= a[writeIndex - 1] && a[i] <= ema + tolerance) {
+        if (++comparison && a[i] >= a[writeIndex - 1] && ++comparison && a[i] <= ema + tolerance) {
 
             a[writeIndex++] = a[i]; 
             
             // update the EMA toward the valid number
             ema = ema + ((a[i] - ema) / 32);
-            consecutiveFall = 0;
         } else {
             // 1-look back error correction
             if (writeIndex == 1 || ++comparison &&  (a[i] >= a[writeIndex - 2] && 
@@ -1528,7 +1541,6 @@ void testSubject(int a[], int n, long long& comparison, long long& purgeCnt) {
                 a[writeIndex - 1] = a[i]; 
                 
                 ema = ema + ((a[i] - ema) / 32);
-                consecutiveFall = 0;
             } else {
                 purged[purgeCount++] = a[i]; // true anomaly
             }

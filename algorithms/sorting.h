@@ -11,6 +11,8 @@
 #include <cmath>
 #include <numeric>
 #include <map>
+#include <random>
+#include <utility>
 #include "timsort.hpp"
 using namespace std;
 using namespace std::chrono;
@@ -19,6 +21,8 @@ struct Record {
     long long comparison;
     long long time; // in nanoseconds
     long long purgeCount; // for heapStalinSort
+    long long tolerance;
+    float disorderEst;
 };
 
 //function which returns Record struct of each sorting algorithm, passing the sorting function as a pointer
@@ -55,7 +59,7 @@ void flashSort(int a[], int n, long long &comparison);
 void heapStalinSort(int a[], int n, long long &comparison, long long &purgeCnt);
 void timSort(int a[], int n, long long& comparison);
 void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCnt);
-void testSubject(int a[], int n, long long& comparison, long long& purgeCnt);
+void testSubject(int a[], int n, long long& comparison, long long& purgeCnt, long long& tol, float& disorderEst);
 //Data generator
 void GenerateRandomData(int a[], int n);
 void GenerateSortedData(int a[], int n);
