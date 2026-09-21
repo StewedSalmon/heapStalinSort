@@ -1228,33 +1228,6 @@ void emaHeapStalinSort(int a[], int n) {
     long long range = max_val - min_val;
     long long tolerance = range / 50; // 2% floating buffer
 
-    // int mid = n / 2;
-    // int pivotIndex;
-    
-    // // Find the median of the first, middle, and last elements
-    // if ((a[0] <= a[mid] && a[mid] <= a[n-1]) || (a[n-1] <= a[mid] && a[mid] <= a[0])) {
-    //     pivotIndex = mid;
-    // } else if ((a[mid] <= a[0] && a[0] <= a[n-1]) || (a[n-1] <= a[0] && a[0] <= a[mid])) {
-    //     pivotIndex = 0;
-    // } else {
-    //     pivotIndex = n - 1;
-    // }
-    
-    // long long pivot = a[pivotIndex];
-    
-    // // Standard Hoare Partition
-    // int left = 0;
-    // int right = n - 1;
-    // while (true) {
-    //     while (a[left] < pivot) left++;
-    //     while (a[right] > pivot) right--;
-    //     if (left >= right) break;
-        
-    //     std::swap(a[left], a[right]);
-    //     left++;
-    //     right--;
-    // }
-
     // EMA buffer
     int writeIndex = 1;
     long long ema = min_val; 
@@ -1267,7 +1240,7 @@ void emaHeapStalinSort(int a[], int n) {
             a[writeIndex++] = a[i]; 
             
             // update the EMA toward the valid number
-            ema = ema + ((a[i] - ema) >> 5); 
+            ema = ema + ((a[i] - ema) / 32); 
         } else {
             // 1-look back error correction
             if (writeIndex == 1 || ((a[i] >= a[writeIndex - 2]) && (a[i] <= expected_max))) {
@@ -1275,7 +1248,7 @@ void emaHeapStalinSort(int a[], int n) {
                 a[writeIndex - 1] = a[i]; 
                 
                 // correct the EMA to track the fixed sequence
-                ema = ema + ((a[i] - ema) >> 5); 
+                ema = ema + ((a[i] - ema) / 32); 
             } else {
                 purged[purgeCount++] = a[i]; // true anomaly
             }
@@ -1319,22 +1292,15 @@ void emaHeapStalinSort(int a[], int n) {
     delete [] merge;
 }
 
-void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCnt, 
-    long long& fixableBefore, long long& fixableAfter, long long& dropBefore, long long& dropAfter) {
+void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCnt) {
     comparison = 0;
     int purgeCount = 0;
     int *purged = new int[n];
-    fixableBefore = 0;
-    fixableAfter = 0;
-    dropBefore = 0;
-    dropAfter = 0; 
 
     // 1. O(N) boundary scan to find min and max values
     int min_val = a[0], max_val = a[0];
     long long reverseCount = 0;
     for (int i = 1; i < n; ++i) {
-        if (a[i] < a[i - 1]) dropBefore += (a[i - 1] - a[i]);
-        if (i >= 2 && a[i] < a[i-1] && a[i] >= a[i-2]) fixableBefore++;
         if (++comparison && a[i] < min_val) min_val = a[i];
         else if (++comparison && a[i] > max_val) max_val = a[i];
     }
@@ -1348,39 +1314,6 @@ void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCn
     long long range = max_val - min_val;
     long long tolerance = range / 50; // 2% floating buffer
 
-    // int mid = n / 2;
-    // int pivotIndex;
-    
-    // // Find the median of the first, middle, and last elements
-    // if ((++comparison && a[0] <= a[mid] && ++comparison && a[mid] <= a[n-1]) || (++comparison && a[n-1] <= a[mid] && ++comparison && a[mid] <= a[0])) {
-    //     pivotIndex = mid;
-    // } else if ((++comparison && a[mid] <= a[0] && ++comparison && a[0] <= a[n-1]) || (++comparison && a[n-1] <= a[0] && ++comparison && a[0] <= a[mid])) {
-    //     pivotIndex = 0;
-    // } else {
-    //     pivotIndex = n - 1;
-    // }
-    
-    // long long pivot = a[pivotIndex];
-    
-    // // Standard Hoare Partition
-    // int left = 0;
-    // int right = n - 1;
-    // while (true) {
-    //     while (++comparison && a[left] < pivot) left++;
-    //     while (++comparison && a[right] > pivot) right--;
-    //     if (left >= right) break;
-        
-    //     std::swap(a[left], a[right]);
-    //     left++;
-    //     right--;
-    // }
-
-    // Trace stats after partitioning
-    for (int i = 1; i < n; ++i) {
-        if (a[i] < a[i - 1]) dropAfter += (a[i - 1] - a[i]);
-        if (i >= 2 && a[i] < a[i-1] && a[i] >= a[i-2]) fixableAfter++;
-    }
-
     // EMA buffer
     int writeIndex = 1;
     long long ema = min_val; 
@@ -1393,7 +1326,7 @@ void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCn
             a[writeIndex++] = a[i]; 
             
             // update the EMA toward the valid number
-            ema = ema + ((a[i] - ema) >> 5); 
+            ema = ema + ((a[i] - ema) / 32); 
         } else {
             // 1-look back error correction
             if (writeIndex == 1 || ((++comparison && a[i] >= a[writeIndex - 2]) && (++comparison && a[i] <= expected_max))) {
@@ -1401,7 +1334,201 @@ void emaHeapStalinSort(int a[], int n, long long& comparison, long long& purgeCn
                 a[writeIndex - 1] = a[i]; 
                 
                 // correct the EMA to track the healed sequence
-                ema = ema + ((a[i] - ema) >> 5); 
+                ema = ema + ((a[i] - ema) / 32); 
+            } else {
+                purged[purgeCount++] = a[i]; // true anomaly
+            }
+        }
+    }
+
+    purgeCnt = purgeCount;
+
+    if (purgeCount == 0) {
+        delete [] purged;
+        return;
+    }
+
+    // min-heap merge
+    buildMinHeap(purged, purgeCount, comparison);
+
+    int* merge = new int[n];
+    int k = 0, v = 0;
+
+    while (v < writeIndex && purgeCount > 0) {
+        if (++comparison && a[v] <= purged[0]) {
+            merge[k++] = a[v++];
+        } else {
+            merge[k++] = purged[0];
+            purged[0] = purged[purgeCount - 1];
+            purgeCount--;
+            if (purgeCount > 0) heapifyMin(purged, purgeCount, 0, comparison);
+        }
+    }
+
+    while (v < writeIndex) merge[k++] = a[v++];
+    
+    while (purgeCount > 0) {
+        merge[k++] = purged[0];
+        purged[0] = purged[purgeCount - 1];
+        purgeCount--;
+        if (purgeCount > 0) heapifyMin(purged, purgeCount, 0, comparison);
+    }
+
+    std::copy(merge, merge + n, a);
+    
+    delete [] purged;
+    delete [] merge;
+}
+
+
+void testSubject(int a[], int n) {
+    int purgeCount = 0;
+    int *purged = new int[n]; 
+
+    // 1. O(N) boundary scan to find min and max values
+    int min_val = a[0], max_val = a[0];
+    long long reverseCount = 0;
+    for (int i = 1; i < n; ++i) {
+        if (a[i] < a[i - 1]) reverseCount++;
+        if (a[i] < min_val) min_val = a[i];
+        else if (a[i] > max_val) max_val = a[i];
+    }
+
+    // reverse the array if it is mostly in descending order
+    float reverseRatio = (float)reverseCount / n;
+    if (reverseRatio > 0.8) {
+        std::reverse(a, a + n);
+    }
+
+    // EMA buffer
+    int writeIndex = 1;
+    long long ema = min_val; 
+
+    long long range = max_val - min_val;
+    long long avg_gap = range / n; 
+    if (avg_gap == 0) avg_gap = 1; // Prevent zero-gap on flat lines
+
+    // The hybrid tolerance formula
+    long long tolerance = (range / 500) + (128 * avg_gap);
+
+    int consecutiveFall = 0;
+    long long shadowSequenceStart = 0;
+
+    for (int i = 1; i < n; ++i) {
+        // expected mathematical ceiling
+        if (a[i] >= a[writeIndex - 1] && a[i] <= ema + tolerance) {
+
+            a[writeIndex++] = a[i]; 
+            
+            // update the EMA toward the valid number
+            ema = ema + ((a[i] - ema) / 32);
+
+            consecutiveFall = 0;
+        } else {
+            // 1-look back error correction
+            if (writeIndex == 1 || (a[i] >= a[writeIndex - 2] && 
+                                    a[i] <= ema + tolerance)) {
+                
+                purged[purgeCount++] = a[writeIndex - 1]; // Evict the false spike
+                a[writeIndex - 1] = a[i]; 
+                
+                ema = ema + ((a[i] - ema) / 32);
+                consecutiveFall = 0;
+            } else {
+                purged[purgeCount++] = a[i]; // true anomaly
+            }
+        }
+    }
+
+    if (purgeCount == 0) {
+        delete [] purged;
+        return;
+    }
+
+    // min-heap merge
+    buildMinHeap(purged, purgeCount);
+
+    int* merge = new int[n];
+    int k = 0, v = 0;
+
+    while (v < writeIndex && purgeCount > 0) {
+        if (a[v] <= purged[0]) {
+            merge[k++] = a[v++];
+        } else {
+            merge[k++] = purged[0];
+            purged[0] = purged[purgeCount - 1];
+            purgeCount--;
+            if (purgeCount > 0) heapifyMin(purged, purgeCount, 0);
+        }
+    }
+
+    while (v < writeIndex) merge[k++] = a[v++];
+    
+    while (purgeCount > 0) {
+        merge[k++] = purged[0];
+        purged[0] = purged[purgeCount - 1];
+        purgeCount--;
+        if (purgeCount > 0) heapifyMin(purged, purgeCount, 0);
+    }
+
+    std::copy(merge, merge + n, a);
+    
+    delete [] purged;
+    delete [] merge;
+}
+
+void testSubject(int a[], int n, long long& comparison, long long& purgeCnt) {
+    comparison = 0;
+    int purgeCount = 0;
+    int *purged = new int[n];
+
+    // 1. O(N) boundary scan to find min and max values
+    int min_val = a[0], max_val = a[0];
+    long long reverseCount = 0;
+    for (int i = 1; i < n; ++i) {
+        if (++comparison && a[i] < min_val) min_val = a[i];
+        else if (++comparison && a[i] > max_val) max_val = a[i];
+    }
+
+    // reverse the array if it is mostly in descending order
+    float reverseRatio = (float)reverseCount / n;
+    if (reverseRatio > 0.8) {
+        std::reverse(a, a + n);
+    }
+
+    // EMA buffer
+    int writeIndex = 1;
+    long long ema = min_val; 
+
+    long long range = max_val - min_val;
+    long long avg_gap = range / n; 
+    if (avg_gap == 0) avg_gap = 1; // Prevent zero-gap on flat lines
+
+    // The hybrid tolerance formula
+    long long tolerance = (range / 500) + (128 * avg_gap);
+
+    int consecutiveFall = 0;
+    long long shadowSequenceStart = 0;
+    
+    for (int i = 1; i < n; ++i) {
+        // expected mathematical ceiling
+        if (a[i] >= a[writeIndex - 1] && a[i] <= ema + tolerance) {
+
+            a[writeIndex++] = a[i]; 
+            
+            // update the EMA toward the valid number
+            ema = ema + ((a[i] - ema) / 32);
+            consecutiveFall = 0;
+        } else {
+            // 1-look back error correction
+            if (writeIndex == 1 || ++comparison &&  (a[i] >= a[writeIndex - 2] && 
+                                    ++comparison && a[i] <= ema + tolerance)) {
+                
+                purged[purgeCount++] = a[writeIndex - 1]; // Evict the false spike
+                a[writeIndex - 1] = a[i]; 
+                
+                ema = ema + ((a[i] - ema) / 32);
+                consecutiveFall = 0;
             } else {
                 purged[purgeCount++] = a[i]; // true anomaly
             }

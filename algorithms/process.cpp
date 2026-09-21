@@ -1,6 +1,6 @@
 #include "sorting.h"
 
-vector<string> algos = {"ema-heap-stalin-sort"};
+vector<string> algos = {"test-subject"};
 // vector<string> algos = {"selection-sort", "insertion-sort", "bubble-sort", "shaker-sort",
 //      "shell-sort", "heap-sort", "merge-sort", "quick-sort", "counting-sort", "radix-sort", 
 //      "flash-sort", "heap-stalin-sort"};
@@ -170,7 +170,7 @@ void processArg(int argc, char* argv[]) {
     
     // trigger the benchmark and exit if requested
     if (do_benchmark) {
-        runAllBenchmarks("ema_heap_v5.1_20%.csv", runs);
+        runAllBenchmarks("test_subject_33%.csv", runs);
         return; 
     }
 
@@ -302,7 +302,7 @@ void GenerateNearlySortedData(int a[], int n) {
 		a[i] = i;
 	}
 	srand((unsigned int) time(NULL));
-    int swap = n / 5; // Swap 10% of the elements
+    int swap = n / 3; // Swap 10% of the elements
 	for (int i = 0; i < swap; i ++)
 	{
 		int r1 = ((rand() << 15) | rand()) % n;
@@ -344,11 +344,7 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
     csv << "Algorithm,Data Size,Data Order,Runs,"
         << "Time Avg (ms),Time Min,Time Max,Time Std,"
         << "Comp Avg,Comp Min,Comp Max,Comp Std,"
-        << "Purge Avg,Purge Min,Purge Max,Purge Std,"
-        << "Fixable Before Avg,Fixable Before Min,Fixable Before Max,Fixable Before Std,"
-        << "Fixable After Avg,Fixable After Min,Fixable After Max,Fixable After Std,"
-        << "Drop Before Avg,Drop Before Min,Drop Before Max,Drop Before Std,"
-        << "Drop After Avg,Drop After Min,Drop After Max,Drop After Std\n";
+        << "Purge Avg,Purge Min,Purge Max,Purge Std\n";
     
     for (int size : data_sizes) {
         for (int orderIdx = 0; orderIdx < input_orders.size(); orderIdx++) { 
@@ -356,7 +352,7 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
             cout << "Benchmarking Size: " << size << " | Order: " << input_orders[orderIdx] << " (" << runs << " runs)...\n";
             
             // Dictionaries to accumulate metrics across multiple runs
-            map<string, vector<long long>> time_map, comp_map, purge_map, fixable_before_map, fixable_after_map, drop_before_map, drop_after_map;
+            map<string, vector<long long>> time_map, comp_map, purge_map;
             
             for (int r = 0; r < runs; r++) {
                 // fresh data for each run to capture true variance
@@ -393,9 +389,19 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
                     else if (algName == "ema-heap-stalin-sort") {
                         int *b = new int[size];
                         for (int k = 0; k < size; k++) b[k] = a[k]; 
-                        emaHeapStalinSort(a, size, record.comparison, record.purgeCount, record.fixableBefore, record.fixableAfter, record.dropBefore, record.dropAfter);
+                        emaHeapStalinSort(a, size, record.comparison, record.purgeCount);
                         auto start = high_resolution_clock::now();
                         emaHeapStalinSort(b, size);
+                        auto stop = high_resolution_clock::now();
+                        record.time = duration_cast<milliseconds>(stop - start).count();
+                        delete[] b;
+                    }
+                    else if (algName == "test-subject") {
+                        int *b = new int[size];
+                        for (int k = 0; k < size; k++) b[k] = a[k]; 
+                        testSubject(a, size, record.comparison, record.purgeCount);
+                        auto start = high_resolution_clock::now();
+                        testSubject(b, size);
                         auto stop = high_resolution_clock::now();
                         record.time = duration_cast<milliseconds>(stop - start).count();
                         delete[] b;
@@ -410,10 +416,6 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
                     time_map[algName].push_back(record.time);
                     comp_map[algName].push_back(record.comparison);
                     purge_map[algName].push_back(record.purgeCount);
-                    fixable_before_map[algName].push_back(record.fixableBefore);
-                    fixable_after_map[algName].push_back(record.fixableAfter);
-                    drop_before_map[algName].push_back(record.dropBefore);
-                    drop_after_map[algName].push_back(record.dropAfter);
                     delete[] a;
                 }
                 delete[] masterArr;
@@ -424,19 +426,11 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
                 Stats t_stats = getStats(time_map[algName]);
                 Stats c_stats = getStats(comp_map[algName]);
                 Stats p_stats = getStats(purge_map[algName]);
-                Stats ib_stats = getStats(fixable_before_map[algName]);
-                Stats ia_stats = getStats(fixable_after_map[algName]);
-                Stats db_stats = getStats(drop_before_map[algName]);
-                Stats da_stats = getStats(drop_after_map[algName]);
                 
                 csv << algName << "," << size << "," << input_orders[orderIdx] << "," << runs << ","
                     << t_stats.avg << "," << t_stats.min << "," << t_stats.max << "," << t_stats.stddev << ","
                     << c_stats.avg << "," << c_stats.min << "," << c_stats.max << "," << c_stats.stddev << ","
-                    << p_stats.avg << "," << p_stats.min << "," << p_stats.max << "," << p_stats.stddev << ","
-                    << ib_stats.avg << "," << ib_stats.min << "," << ib_stats.max << "," << ib_stats.stddev << ","
-                    << ia_stats.avg << "," << ia_stats.min << "," << ia_stats.max << "," << ia_stats.stddev << ","
-                    << db_stats.avg << "," << db_stats.min << "," << db_stats.max << "," << db_stats.stddev << ","
-                    << da_stats.avg << "," << da_stats.min << "," << da_stats.max << "," << da_stats.stddev << "\n";
+                    << p_stats.avg << "," << p_stats.min << "," << p_stats.max << "," << p_stats.stddev << "\n";
             }
         }
     }
