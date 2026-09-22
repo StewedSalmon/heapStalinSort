@@ -1,11 +1,12 @@
 #include "sorting.h"
 
-vector<string> algos = {"test-subject"};
+vector<string> algos = {"heap-stalin-sort", "ema-heap-stalin-sort", "test-subject", "heap-sort", "merge-sort", "quick-sort"};
 // vector<string> algos = {"selection-sort", "insertion-sort", "bubble-sort", "shaker-sort",
 //      "shell-sort", "heap-sort", "merge-sort", "quick-sort", "counting-sort", "radix-sort", 
 //      "flash-sort", "heap-stalin-sort"};
 vector<string> output_parameters = {"-time", "-comp", "-both"};
-vector<string> input_orders = {"-rand", "-sorted", "-rev", "-nsorted"};
+vector<string> input_orders = {"-rand", "-sorted", "-rev", "-nsorted", "-mag", "-burst", "-seq",
+"-exp", "-2way", "-boil"};
 
 void runAllBenchmarks(string csvFilename, int runs);
 
@@ -170,7 +171,7 @@ void processArg(int argc, char* argv[]) {
     
     // trigger the benchmark and exit if requested
     if (do_benchmark) {
-        runAllBenchmarks("test_subject_33%.csv", runs);
+        runAllBenchmarks("compare_hard.csv", runs);
         return; 
     }
 
@@ -271,12 +272,22 @@ void HoanVi(T &a, T &b) {
 
 // Hàm phát sinh mảng dữ liệu ngẫu nhiên
 void GenerateRandomData(int a[], int n) {
-	srand((unsigned int)time(NULL));
+    // pure monotonic sequence
+    for (int i = 0; i < n; i++) {
+        a[i] = i; 
+    }
 
-	for (int i = 0; i < n; i++)
-	{
-		a[i] = ((rand() << 15) | rand()) % n;
-	}
+    // Mersenne Twister PRNG
+    std::random_device rd;
+    std::mt19937 gen(rd()); 
+
+    // Fisher-Yates Shuffle for uniform random permutation
+    for (int i = n - 1; i > 0; i--) {
+        // uniform_int_distribution eliminates the modulo bias of rand() % n
+        std::uniform_int_distribution<int> dist(0, i);
+        int j = dist(gen);
+        std::swap(a[i], a[j]);
+    }
 }
 
 // Hàm phát sinh mảng dữ liệu có thứ tự tăng dần
@@ -302,13 +313,82 @@ void GenerateNearlySortedData(int a[], int n) {
 		a[i] = i;
 	}
 	srand((unsigned int) time(NULL));
-    int swap = n / 3; // Swap 10% of the elements
+    int swap = n * 0.8;
 	for (int i = 0; i < swap; i ++)
 	{
 		int r1 = ((rand() << 15) | rand()) % n;
         int r2 = ((rand() << 15) | rand()) % n;
 		HoanVi(a[r1], a[r2]);
 	}
+}
+
+void MagnitudeNoise(int a[], int n) {
+    for (int i = 0; i < n; i++) a[i] = i;
+    for (int i = 0; i < n * 0.001; i++) {
+        int index = rand() % n;
+        a[index] = n * 100; // Artificially explode the maximum
+    }
+}
+
+void LocalBurst(int a[], int n) {
+    for (int i = 0; i < n; i++) a[i] = i;
+    // Shuffle only the middle 10% of the array
+    int start = n * 0.45;
+    int end = n * 0.55;
+    for (int i = end; i > start; i--) {
+        int j = start + (rand() % (i - start + 1));
+        std::swap(a[i], a[j]);
+    }
+}
+
+void AdversarialSequence(int a[], int n) {
+    for (int i = 0; i < n; i++) a[i] = i;
+    int maxValue = 2 * n;
+    int middle = n / 2;
+    // Insert a 3-element poisoned ramp
+    a[middle] = maxValue;
+    a[middle + 1] = maxValue + 1;
+    a[middle + 2] = maxValue + 2;
+}
+
+void ExponentialCurve(int a[], int n) {
+    // 1. Generate an exponential curve instead of a straight line
+    for (int i = 0; i < n; i++) {
+        a[i] = (long long)i * i / n; 
+    }
+    // 2. EMP Burst in the flat section (10% to 15%)
+    int start1 = n * 0.10, end1 = n * 0.15;
+    for (int i = end1; i > start1; i--) {
+        int j = start1 + (rand() % (i - start1 + 1));
+        std::swap(a[i], a[j]);
+    }
+    // 3. EMP Burst in the vertical section (85% to 90%)
+    int start2 = n * 0.85, end2 = n * 0.90;
+    for (int i = end2; i > start2; i--) {
+        int j = start2 + (rand() % (i - start2 + 1));
+        std::swap(a[i], a[j]);
+    }
+}
+
+void TwoTrackPhantom(int a[], int n) {
+    int gap = n / 2;
+    for (int i = 0; i < n; i++) {
+        // Alternate between a low track and a high track
+        a[i] = (i % 2 == 0) ? i : (i + gap);
+    }
+}
+
+void FrogBoil(int a[], int n) {
+    for (int i = 0; i < n; i++) a[i] = i;
+    
+    int start = n * 0.40;
+    int end = n * 0.45;
+    int fake_slope = 3; // Climbs 3x faster than the real data
+    
+    // Inject a smooth, valid monotonic ramp that deviates from the true baseline
+    for (int i = start; i < end; i++) {
+        a[i] = a[start - 1] + ((i - start + 1) * fake_slope);
+    }
 }
 
 void GenerateData(int a[], int n, int dataType) {
@@ -326,13 +406,31 @@ void GenerateData(int a[], int n, int dataType) {
 	case 3:	// gần như có thứ tự
 		GenerateNearlySortedData(a, n);
 		break;
+    case 4:
+        MagnitudeNoise(a, n);
+        break;
+    case 5:
+        LocalBurst(a, n);
+        break;
+    case 6:
+        AdversarialSequence(a, n);
+        break;
+    case 7:
+        ExponentialCurve(a, n);
+        break;
+    case 8:
+        TwoTrackPhantom(a, n);
+        break;
+    case 9:
+        FrogBoil(a, n);
+        break;
 	default:
 		printf("Error: unknown data type!\n");
 	}
 }
 
 void runAllBenchmarks(string csvFilename, int runs = 1) {
-    vector<int> data_sizes = {10000, 30000, 50000, 100000, 300000, 500000}; 
+    vector<int> data_sizes = {100000, 500000}; 
     
     ofstream csv(csvFilename);
     if (!csv) {
@@ -344,15 +442,17 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
     csv << "Algorithm,Data Size,Data Order,Runs,"
         << "Time Avg (ms),Time Min,Time Max,Time Std,"
         << "Comp Avg,Comp Min,Comp Max,Comp Std,"
-        << "Purge Avg,Purge Min,Purge Max,Purge Std\n";
+        << "Purge Avg,Purge Min,Purge Max,Purge Std,"
+        << "Tol Avg,Tol Min,Tol Max,Tol Std,"
+        << "DisorderEst Avg,DisorderEst Min,DisorderEst Max,DisorderEst Std\n";
     
     for (int size : data_sizes) {
         for (int orderIdx = 0; orderIdx < input_orders.size(); orderIdx++) { 
-            if (orderIdx != 3) continue;
+            if (orderIdx == 0 || orderIdx == 1 || orderIdx == 2 || orderIdx == 3) continue;
             cout << "Benchmarking Size: " << size << " | Order: " << input_orders[orderIdx] << " (" << runs << " runs)...\n";
             
             // Dictionaries to accumulate metrics across multiple runs
-            map<string, vector<long long>> time_map, comp_map, purge_map;
+            map<string, vector<long long>> time_map, comp_map, purge_map, tolerance_map, disorder_map;
             
             for (int r = 0; r < runs; r++) {
                 // fresh data for each run to capture true variance
@@ -399,7 +499,7 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
                     else if (algName == "test-subject") {
                         int *b = new int[size];
                         for (int k = 0; k < size; k++) b[k] = a[k]; 
-                        testSubject(a, size, record.comparison, record.purgeCount);
+                        testSubject(a, size, record.comparison, record.purgeCount, record.tolerance, record.disorderEst);
                         auto start = high_resolution_clock::now();
                         testSubject(b, size);
                         auto stop = high_resolution_clock::now();
@@ -416,6 +516,8 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
                     time_map[algName].push_back(record.time);
                     comp_map[algName].push_back(record.comparison);
                     purge_map[algName].push_back(record.purgeCount);
+                    tolerance_map[algName].push_back(record.tolerance);
+                    disorder_map[algName].push_back(record.disorderEst);
                     delete[] a;
                 }
                 delete[] masterArr;
@@ -426,11 +528,15 @@ void runAllBenchmarks(string csvFilename, int runs = 1) {
                 Stats t_stats = getStats(time_map[algName]);
                 Stats c_stats = getStats(comp_map[algName]);
                 Stats p_stats = getStats(purge_map[algName]);
+                Stats tol_stats = getStats(tolerance_map[algName]);
+                Stats d_stats = getStats(disorder_map[algName]);
                 
                 csv << algName << "," << size << "," << input_orders[orderIdx] << "," << runs << ","
                     << t_stats.avg << "," << t_stats.min << "," << t_stats.max << "," << t_stats.stddev << ","
                     << c_stats.avg << "," << c_stats.min << "," << c_stats.max << "," << c_stats.stddev << ","
-                    << p_stats.avg << "," << p_stats.min << "," << p_stats.max << "," << p_stats.stddev << "\n";
+                    << p_stats.avg << "," << p_stats.min << "," << p_stats.max << "," << p_stats.stddev << ","
+                    << tol_stats.avg << "," << tol_stats.min << "," << tol_stats.max << "," << tol_stats.stddev << ","
+                    << d_stats.avg << "," << d_stats.min << "," << d_stats.max << "," << d_stats.stddev << "\n";
             }
         }
     }
